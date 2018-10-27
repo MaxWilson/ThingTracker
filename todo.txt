@@ -1,0 +1,1 @@
+Allow auth with MSA (wilson.max@gmail.com) instead of domain account

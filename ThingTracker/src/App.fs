@@ -57,7 +57,10 @@ let renderThing (model:ThingTracking) dispatch =
             (model.instances |> List.sumBy (fun dt -> if dt < before then 1 else 0)))
     ]
   R.p [] [
-    yield R.text [Style [FontWeight "bold"]] [str model.name]
+    yield R.div [] [
+      R.text [Style [FontWeight "bold"]] [str model.name]
+      R.button [OnClick (fun _ -> dispatch <| AddInstance model.name)] [str "+"]
+      ]
     yield ul [] [
       for x in recent do
         yield li [] [str x]

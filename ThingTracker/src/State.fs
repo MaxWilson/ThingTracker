@@ -7,6 +7,8 @@ open Fable.Import.Browser
 open Global
 open Types
 open System
+open Fable.PowerPack
+open Fable.PowerPack.Fetch.Fetch_types
 
 //let pageParser: Parser<Page->Page,Page> =
 //  oneOf [
@@ -32,9 +34,15 @@ let init result =
     }, Cmd.ofMsg FetchList
 
 let update msg model =
+  //let saveThing (thing: ThingTracking) =
+  //  Fable.powerPack.Fetch.postAs
   match msg with
   | FetchList ->
-    { model with isBusy = true }, Cmd.Empty
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> "https://wilsondata.azurewebsites.net/api/List/thingTracker" [RequestProperties.Credentials RequestCredentials.Include]
+    let onSuccess (things: ThingTracking[]) =
+      FetchedList (List.ofArray things)
+    let onFail (e:Exception) = FetchedList []
+    { model with isBusy = true }, Cmd.ofPromise fetch () onSuccess onFail
   | FetchedList lst ->
      { model with isBusy = false; things = lst }, Cmd.Empty
   | AddInstance name ->

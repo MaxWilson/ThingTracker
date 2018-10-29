@@ -15,6 +15,8 @@ type Msg =
   | AddTracker of string
   | Input of string
   | GotoAdd
+  | Saving
+  | Saved
 
 
 type UIState =

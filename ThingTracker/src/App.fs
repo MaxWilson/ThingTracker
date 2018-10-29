@@ -56,7 +56,7 @@ let renderThing (model:ThingTracking) dispatch =
     yield (sprintf "Before %s %d" (before.ToString("MM/dd"))
             (model.instances |> List.sumBy (fun dt -> if dt < before then 1 else 0)))
     ]
-  R.p [] [
+  R.div [] [
     yield R.div [] [
       R.text [Style [FontWeight "bold"]] [str model.name]
       R.button [OnClick (fun _ -> dispatch <| AddInstance model.name)] [str "+"]
@@ -65,6 +65,7 @@ let renderThing (model:ThingTracking) dispatch =
       for x in recent do
         yield li [] [str x]
       ]
+    yield R.br []
     ]
 
 let root (model:Model) dispatch =
@@ -121,7 +122,7 @@ let root (model:Model) dispatch =
                 [ ClassName "columns" ]
                 [ div
                     [ ClassName "column" ]
-                    [ pageHtml model.state ] ] ] ] ]
+                    [ (if model.isBusy then R.h1 [] [str "Loading..."] else pageHtml model.state) ] ] ] ] ]
 
 open Elmish.React
 open Elmish.Debug

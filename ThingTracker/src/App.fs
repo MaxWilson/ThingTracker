@@ -24,7 +24,18 @@ let menuItem label page currentPage =
             Href (toHash page) ]
           [ str label ] ]
 
+
+module KeyCode =
+    let enter = 13.
+    let upArrow = 38.
+    let downArrow =  40.
+
 let root (model:Model) dispatch =
+  let onKeyDown keyCode action =
+      OnKeyDown (fun (ev:Fable.Import.React.KeyboardEvent) ->
+          if ev.keyCode = keyCode then
+              ev.preventDefault()
+              action ev)
   let pageHtml = function
     | AddingNew name ->
       div
@@ -37,7 +48,9 @@ let root (model:Model) dispatch =
                   Placeholder "What do you want to track?"
                   DefaultValue name
                   AutoFocus true
-                  OnChange (fun ev -> !!ev.target?value |> Input |> dispatch ) ] ]
+                  OnChange (fun ev -> !!ev.target?value |> Input |> dispatch )
+                  onKeyDown KeyCode.enter (fun _ -> dispatch (AddTracker name))
+                  ] ]
           br [ ]
           button [OnClick (fun _ -> dispatch (AddTracker name))] [str "OK"] ]
     | Tracking ->

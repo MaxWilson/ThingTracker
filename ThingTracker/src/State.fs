@@ -24,6 +24,7 @@ open System
 //      { model with currentPage = page }, []
 
 let init result =
+  Fable.Import.Browser.console.log("Ran init");
   {
     things = []
     isBusy = true

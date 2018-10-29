@@ -10,6 +10,8 @@ open Fable.Import.Browser
 open Types
 open App.State
 open Global
+module R = Fable.Helpers.React
+type DayOfWeek = System.DayOfWeek
 
 importAll "../sass/main.sass"
 
@@ -35,6 +37,33 @@ document.addEventListener_keydown(fun ev -> if onKeypress ev then
                                               ev.preventDefault()
                                             obj())
 
+let renderThing (model:ThingTracking) dispatch =
+  let recent = [
+    let today = System.DateTimeOffset.Now.Date |> System.DateTimeOffset
+    for x in 0. .. 6. do
+      let start1, end1 = today.AddDays(-x), today.AddDays(1. - x)
+      let count = model.instances |> List.sumBy (fun dt -> if start1 <= dt && dt <= end1 then 1 else 0)
+      let dayOfWeek = function
+      | DayOfWeek.Sunday -> "Sun"
+      | DayOfWeek.Monday -> "Mon"
+      | DayOfWeek.Tuesday -> "Tue"
+      | DayOfWeek.Wednesday -> "Wed"
+      | DayOfWeek.Thursday -> "Thu"
+      | DayOfWeek.Friday -> "Fri"
+      | _Saturday -> "Sat"
+      yield (sprintf "%s %s %d" (dayOfWeek start1.DayOfWeek) (start1.ToString("MM/dd")) count)
+    let before = today.AddDays(-6.)
+    yield (sprintf "Before %s %d" (before.ToString("MM/dd"))
+            (model.instances |> List.sumBy (fun dt -> if dt < before then 1 else 0)))
+    ]
+  R.p [] [
+    yield R.text [Style [FontWeight "bold"]] [str model.name]
+    yield ul [] [
+      for x in recent do
+        yield li [] [str x]
+      ]
+    ]
+
 let root (model:Model) dispatch =
   let onKeyDown keyCode action =
       OnKeyDown (fun (ev:Fable.Import.React.KeyboardEvent) ->
@@ -57,7 +86,7 @@ let root (model:Model) dispatch =
             [ input
                 [ ClassName "input"
                   Type "text"
-                  Placeholder "What do you want to track?"
+                  Placeholder "What do you want to track, dude?"
                   DefaultValue name
                   AutoFocus true
                   OnChange (fun ev -> !!ev.target?value |> Input |> dispatch )
@@ -66,11 +95,11 @@ let root (model:Model) dispatch =
           br [ ]
           button [OnClick (fun _ -> dispatch (AddTracker name))] [str "OK"] ]
     | Tracking ->
-      div [] [
+      div [ClassName "content"] [
         yield button [OnClick (fun _ -> dispatch GotoAdd)] [str "+"]
-        yield div[] [str "Things:"]
-        for x in model.things do
-          yield div[] [str x.name]
+        yield R.h1 [] [str "Things:"]
+        for thing in model.things do
+          yield renderThing thing dispatch
         ]
 
   div

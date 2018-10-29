@@ -30,12 +30,24 @@ module KeyCode =
     let upArrow = 38.
     let downArrow =  40.
 
+let mutable onKeypress = fun (ev: KeyboardEvent) -> false
+document.addEventListener_keydown(fun ev -> if onKeypress ev then
+                                              ev.preventDefault()
+                                            obj())
+
 let root (model:Model) dispatch =
   let onKeyDown keyCode action =
       OnKeyDown (fun (ev:Fable.Import.React.KeyboardEvent) ->
           if ev.keyCode = keyCode then
               ev.preventDefault()
               action ev)
+  onKeypress <-
+    fun e ->
+      if e.key = "+" && model.state = Tracking then
+        dispatch GotoAdd
+        true
+      else
+        false
   let pageHtml = function
     | AddingNew name ->
       div

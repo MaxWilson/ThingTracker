@@ -76,7 +76,8 @@ let renderThing (model:ThingTracking) dispatch =
       version    : 'v3.2'
     });
       
-    FB.AppEvents.logPageView();   
+    FB.AppEvents.logPageView();
+    FB.getLoginStatus(resp => console.log(resp.authResponse.accessToken))
   };
 
   (function(d, s, id){

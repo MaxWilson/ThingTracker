@@ -59,7 +59,7 @@ module Facebook =
       });
 
       FB.AppEvents.logPageView();
-      FB.getLoginStatus(resp => $0(resp.authResponse.accessToken))
+      FB.getLoginStatus(resp => $0(resp))
     };
 
     (function(d, s, id){

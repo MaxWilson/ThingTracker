@@ -110,7 +110,7 @@ let update msg model =
     let onFail (e:Exception) = FetchedList []
     { model with viewModel = { model.viewModel with routes = Busy :: model.viewModel.routes } }, Cmd.ofPromise fetch () onSuccess onFail
   | FetchedList lst ->
-     { model with viewModel = { model.viewModel with routes = model.viewModel.routes }; things = lst }, Cmd.Empty
+     { model with viewModel = { model.viewModel with routes = [Tracking] }; things = lst }, Cmd.Empty
   | AddInstance name ->
     let update recognizer transform lst =
       lst |> List.map(fun i -> if (recognizer i) then transform(i) else i)

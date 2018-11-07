@@ -68,6 +68,29 @@ let renderThing (model:ThingTracking) dispatch =
     yield R.br []
     ]
 
+[<Emit("""
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '2065879493471182',
+      cookie     : true,
+      xfbml      : true,
+      version    : 'v3.2'
+    });
+      
+    FB.AppEvents.logPageView();
+    FB.getLoginStatus(resp => console.log(resp.authResponse.accessToken))
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+""")>]
+let initializeFacebook() = jsNative
+
 let root (model:Model) dispatch =
   let onKeyDown keyCode action =
       OnKeyDown (fun (ev:Fable.Import.React.KeyboardEvent) ->
@@ -109,6 +132,7 @@ let root (model:Model) dispatch =
   div
     []
     [
+      div [ClassName "fb-login-button"; Data ("max-rows", "1"); Data("size", "medium"); Data("button-type", "login_with"); Data("show-faces", "false"); Data("auto-logout-link", "true"); Data("use-continue-as", "true")] []
       //div
       //  [ ClassName "navbar-bg" ]
       //  [ div
@@ -137,3 +161,6 @@ Program.mkProgram init update root
 #endif
 |> Program.withReact "elmish-app"
 |> Program.run
+
+initializeFacebook()
+

@@ -32,8 +32,8 @@ module KeyCode =
     let upArrow = 38.
     let downArrow =  40.
 
-let mutable onKeypress = fun (ev: KeyboardEvent) -> false
-document.addEventListener_keydown(fun ev -> if onKeypress ev then
+let mutable onKeypress : (KeyboardEvent -> bool) option = None
+document.addEventListener_keydown(fun ev -> if onKeypress.IsSome && onKeypress.Value(ev) then
                                               ev.preventDefault()
                                             obj())
 
@@ -76,7 +76,7 @@ let renderThing (model:ThingTracking) dispatch =
       xfbml      : true,
       version    : 'v3.2'
     });
-      
+
     FB.AppEvents.logPageView();
     FB.getLoginStatus(resp => console.log(resp.authResponse.accessToken))
   };
@@ -97,13 +97,13 @@ let root (model:Model) dispatch =
           if ev.keyCode = keyCode then
               ev.preventDefault()
               action ev)
-  onKeypress <-
-    fun e ->
-      if e.key = "+" && model.state = Tracking then
-        dispatch GotoAdd
-        true
-      else
-        false
+  let handler (e: KeyboardEvent) =
+    if e.key = "+" && model.state = Tracking then
+      dispatch GotoAdd
+      true
+    else
+      false
+  onKeypress <- Some handler
   let pageHtml = function
     | AddingNew name ->
       div

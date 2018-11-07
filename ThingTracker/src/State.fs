@@ -13,6 +13,7 @@ open Fable.Core
 open System.Net.Security
 open Fable.Core
 open JsInterop
+open Fable.PowerPack
 
 //let pageParser: Parser<Page->Page,Page> =
 //  oneOf [
@@ -28,6 +29,22 @@ open JsInterop
 //    model,Navigation.modifyUrl (toHash model.currentPage)
 //  | Some page ->
 //      { model with currentPage = page }, []
+
+module EasyAuth =
+  type Response = { authenticationToken: string }
+  let ofFacebook token =
+    promise {
+      let! resp = Fable.PowerPack.Fetch.postRecord "https://wilsondata.azurewebsites.net/.auth/login/facebook" (createObj ["access_token" ==> token])[]
+      if resp.Ok then
+        try
+          let! retval = resp.json<Response>()
+          return retval.authenticationToken
+        with e ->
+          return e.ToString()
+      else
+        failwithf "Could not authorize"
+        return "Shouldn't get here"
+    }
 
 module Facebook =
   type AuthStatus = {
@@ -86,7 +103,8 @@ let update msg model =
   //  Fable.powerPack.Fetch.postAs
   match msg with
   | FetchList ->
-    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> "https://wilsondata.azurewebsites.net/api/List/thingTracker" [RequestProperties.Credentials RequestCredentials.Include]
+    let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> "https://wilsondata.azurewebsites.net/api/List/thingTracker" [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
     let onSuccess (things: ThingTracking[]) =
       FetchedList (List.ofArray things)
     let onFail (e:Exception) = FetchedList []
@@ -111,11 +129,12 @@ let update msg model =
   | AuthEvent ev ->
     match ev with
     | Auth.Transition.Authenticated(Auth.Provider.Facebook, token) ->
-      let fetch() = Fable.PowerPack.Fetch.postRecord "https://wilsondata.azurewebsites.net/.auth/login/facebook/callback" (createObj ["accessToken" ==> token])[]
       let model = { model with viewModel = { model.viewModel with routes = Busy :: model.viewModel.routes } }
-      model, Cmd.ofPromise fetch () (fun _ -> FetchedList []) (fun _ -> FetchedList [])
+      model, Cmd.ofPromise EasyAuth.ofFacebook token (fun token -> AuthEvent (Auth.Transition.Authorized token)) (fun _ -> FetchedList [])
     | Auth.Transition.Unauthenticated ->
       { model with auth = Auth.Unauthenticated }, Cmd.Empty
+    | Auth.Transition.Authorized token ->
+      { model with auth = Auth.Authorized token }, Cmd.ofMsg FetchList
     | event ->
       failwithf "TODO, not implemented %A" event
 

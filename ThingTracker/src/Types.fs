@@ -24,7 +24,7 @@ module Auth =
     | Authorized of AccessToken
   type Transition =
     | Authenticated of Provider * AccessToken
-    | Authorized of Provider * AccessToken
+    | Authorized of AccessToken
     | Unauthenticated
     | Logout
 

@@ -10,6 +10,7 @@ open Fable.Import.Browser
 open Types
 open App.State
 open Global
+module Option = Microsoft.FSharp.Core.Option
 module R = Fable.Helpers.React
 type DayOfWeek = System.DayOfWeek
 
@@ -68,29 +69,6 @@ let renderThing (model:ThingTracking) dispatch =
     yield R.br []
     ]
 
-[<Emit("""
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId      : '2065879493471182',
-      cookie     : true,
-      xfbml      : true,
-      version    : 'v3.2'
-    });
-
-    FB.AppEvents.logPageView();
-    FB.getLoginStatus(resp => console.log(resp.authResponse.accessToken))
-  };
-
-  (function(d, s, id){
-     var js, fjs = d.getElementsByTagName(s)[0];
-     if (d.getElementById(id)) {return;}
-     js = d.createElement(s); js.id = id;
-     js.src = "https://connect.facebook.net/en_US/sdk.js";
-     fjs.parentNode.insertBefore(js, fjs);
-   }(document, 'script', 'facebook-jssdk'));
-""")>]
-let initializeFacebook() = jsNative
-
 let root (model:Model) dispatch =
   let onKeyDown keyCode action =
       OnKeyDown (fun (ev:Fable.Import.React.KeyboardEvent) ->
@@ -98,13 +76,15 @@ let root (model:Model) dispatch =
               ev.preventDefault()
               action ev)
   let handler (e: KeyboardEvent) =
-    if e.key = "+" && model.state = Tracking then
+    if e.key = "+" && (match model.viewModel with { routes = Tracking::_ } -> true | _ -> false) then
       dispatch GotoAdd
       true
     else
       false
   onKeypress <- Some handler
   let pageHtml = function
+    | Busy ->
+      R.h1 [] [str "Loading..."]
     | AddingNew name ->
       div
         [ ]
@@ -132,7 +112,6 @@ let root (model:Model) dispatch =
   div
     []
     [
-      div [ClassName "fb-login-button"; Data ("max-rows", "1"); Data("size", "medium"); Data("button-type", "login_with"); Data("show-faces", "false"); Data("auto-logout-link", "true"); Data("use-continue-as", "true")] []
       //div
       //  [ ClassName "navbar-bg" ]
       //  [ div
@@ -146,7 +125,15 @@ let root (model:Model) dispatch =
                 [ ClassName "columns" ]
                 [ div
                     [ ClassName "column" ]
-                    [ (if model.isBusy then R.h1 [] [str "Loading..."] else pageHtml model.state) ] ] ] ] ]
+                    [
+                      match model.auth with
+                      | Auth.Unauthenticated ->
+                        yield button [OnClick (fun _ -> State.Facebook.Login dispatch)] [str "Login with Facebook"]
+                      | Auth.Authorized _ ->
+                        yield (pageHtml (model.viewModel.routes |> List.tryHead |> Microsoft.FSharp.Core.Option.defaultValue Tracking) )
+                      | Auth.Authenticated _ | Auth.Uninitialized ->
+                        yield str "Loading..."
+                      ] ] ] ] ]
 
 open Elmish.React
 open Elmish.Debug
@@ -162,5 +149,4 @@ Program.mkProgram init update root
 |> Program.withReact "elmish-app"
 |> Program.run
 
-initializeFacebook()
 

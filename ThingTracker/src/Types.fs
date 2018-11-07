@@ -8,7 +8,33 @@ type ThingTracking = {
   instances: DateTimeOffset list
   }
 
+module Auth =
+  type Provider = Facebook // TODO: add Google, MSA
+  (* Transitions:
+     Unitialized (on app start) -> Authenticated | Unauthenticated when initialization completes
+     Unauthenticated -> Authenticated when user logs in and Facebook sends a response
+     Authenticated -> Authorized when WilsonData EasyAuth provides an X-ZUMO-AUTH token
+     Authenticated | Authorized -> Unauthenticated when user logs out
+  *)
+  type AccessToken = string
+  type State =
+    | Uninitialized
+    | Unauthenticated
+    | Authenticated of Provider * AccessToken
+    | Authorized of AccessToken
+  type Transition =
+    | Authenticated of Provider * AccessToken
+    | Authorized of Provider * AccessToken
+    | Unauthenticated
+    | Logout
+
+type UIState =
+  | Tracking
+  | Busy
+  | AddingNew of string
+
 type Msg =
+  | AuthEvent of Auth.Transition
   | FetchList
   | FetchedList of ThingTracking list
   | AddInstance of string
@@ -18,13 +44,11 @@ type Msg =
   | Saving
   | Saved
 
-
-type UIState =
-  | Tracking
-  | AddingNew of string
-
+type ViewModel = {
+  routes: UIState list
+  }
 type Model = {
   things: ThingTracking list
-  isBusy: bool
-  state: UIState
+  viewModel: ViewModel
+  auth: Auth.State
   }

@@ -66,6 +66,10 @@ module Facebook =
   let private FBLogin handler = jsNative
   let Login dispatch =
     FBLogin(onAuth dispatch) |> ignore
+  [<Emit("FB.logout($0)")>]
+  let private FBLogout handler = jsNative
+  let Logout dispatch =
+    FBLogin(fun _ -> dispatch (AuthEvent <| Auth.Transition.Unauthenticated)) |> ignore
   [<Emit("""
     window.fbAsyncInit = function() {
       FB.init({

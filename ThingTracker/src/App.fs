@@ -103,10 +103,11 @@ let root (model:Model) dispatch =
           button [OnClick (fun _ -> dispatch (AddTracker name))] [str "OK"] ]
     | Tracking ->
       div [ClassName "content"] [
-        yield button [OnClick (fun _ -> dispatch GotoAdd)] [str "+"]
-        yield R.h1 [] [str "Things:"]
+        yield button [OnClick (fun _ -> dispatch GotoAdd)] [str "Add New Thing"]
+        yield R.h1 [] [str "Things I'm tracking:"]
         for thing in model.things do
           yield renderThing thing dispatch
+        yield button [OnClick (fun _ -> Facebook.Logout dispatch)] [str "Log out"]
         ]
 
   div

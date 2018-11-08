@@ -34,9 +34,10 @@ module.exports = {
     },
     devServer: {
         contentBase: resolve('./public'),
-        port: 8080,
+        port: 8443,
         hot: true,
-        inline: true
+        inline: true,
+        https: true
     },
     module: {
         rules: [

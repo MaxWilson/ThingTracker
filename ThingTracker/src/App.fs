@@ -132,8 +132,10 @@ let root (model:Model) dispatch =
                         yield button [OnClick (fun _ -> State.Facebook.Login dispatch)] [str "Login with Facebook"]
                       | Auth.Authorized _ ->
                         yield (pageHtml (model.viewModel.routes |> List.tryHead |> Microsoft.FSharp.Core.Option.defaultValue Tracking) )
-                      | Auth.Authenticated _ | Auth.Uninitialized ->
+                      | Auth.Uninitialized ->
                         yield str "Loading..."
+                      | Auth.Authenticated _ ->
+                        yield str "Logging in..."
                       ] ] ] ] ]
 
 open Elmish.React

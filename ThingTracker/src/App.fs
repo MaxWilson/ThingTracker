@@ -117,7 +117,7 @@ let root (model:Model) dispatch =
         ]
 
   div
-    []
+    [Style [Height "2000px"]]
     [
       //div
       //  [ ClassName "navbar-bg" ]

@@ -88,7 +88,7 @@ let root (model:Model) dispatch =
   onKeypress <- Some handler
   let pageHtml = function
     | Busy ->
-      R.h1 [] [str "Wait..."]
+      R.h1 [] [str "Processing..."]
     | AddingNew name ->
       div
         [ ]

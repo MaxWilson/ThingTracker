@@ -1,1 +1,1 @@
-Allow auth with MSA (wilson.max@gmail.com) instead of domain account
+On mobile, there's a UI glitch if you save while scrolled down the page: it jumps back up to the top of the page

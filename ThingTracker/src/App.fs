@@ -101,6 +101,8 @@ let root (model:Model) dispatch =
                   ] ]
           br [ ]
           button [OnClick (fun _ -> dispatch (AddTracker name))] [str "OK"] ]
+    | Tracking when model.viewModel.savingSince.IsSome ->
+      R.h1 [] [str "Saving..."]
     | Tracking ->
       div [ClassName "content"] [
         yield button [OnClick (fun _ -> dispatch GotoAdd)] [str "Add New Thing"]

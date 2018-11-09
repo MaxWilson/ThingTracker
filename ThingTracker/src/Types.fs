@@ -41,11 +41,11 @@ type Msg =
   | AddTracker of string
   | Input of string
   | GotoAdd
-  | Saving
-  | Saved
+  | Saved of requestTime: DateTimeOffset
 
 type ViewModel = {
   routes: UIState list
+  savingSince: DateTimeOffset option
   }
 type Model = {
   things: ThingTracking list

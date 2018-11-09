@@ -100,7 +100,7 @@ let saveUrl name = sprintf "%s/%s" (thingUrl "Save") name
 let init result =
   {
     things = []
-    viewModel = { routes = [Busy; Tracking] }
+    viewModel = { routes = [Busy; Tracking]; savingSince = None }
     auth = Auth.Uninitialized
     }, Cmd.ofSub (fun dispatch ->
         let warmupAzureFunction() =
@@ -124,22 +124,28 @@ let update msg model =
     let onFail (e:Exception) = FetchedList []
     { model with viewModel = { model.viewModel with routes = Busy :: model.viewModel.routes } }, Cmd.ofPromise fetch () onSuccess onFail
   | FetchedList lst ->
-     { model with viewModel = { model.viewModel with routes = [Tracking] }; things = lst }, Cmd.Empty
+    { model with viewModel = { model.viewModel with routes = [Tracking] }; things = lst }, Cmd.Empty
+  | Saved t ->
+    match model.viewModel.savingSince with
+      | Some lasttime when lasttime > t -> model, Cmd.Empty
+      | _ ->
+        // if we're the last request, zero out save time so the UI will blank the "Busy saving..." dialog
+        { model with viewModel = { model.viewModel with savingSince = None } }, Cmd.ofMsg FetchList
   | AddInstance name ->
     let update recognizer transform lst =
       lst |> List.map(fun i -> if (recognizer i) then transform(i) else i)
     let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = DateTimeOffset.Now :: t.instances })
     let thing = things |> List.find (fun t -> t.name = name)
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
-      |> ignore
-    { model with things = things }, Cmd.Empty
+    let time = DateTimeOffset.Now
+    let req = Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    { model with things = things; viewModel = { model.viewModel with savingSince = Some time } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
   | AddTracker name ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let thing = { name = name; instances = [] }
-    Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
-      |> ignore
-    { model with things = thing :: model.things; viewModel = { routes = [Tracking] } }, Cmd.Empty
+    let time = DateTimeOffset.Now
+    let req = Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    { model with things = thing :: model.things; viewModel = { savingSince = Some time; routes = [Tracking] } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
   | GotoAdd ->
     { model with viewModel = { model.viewModel with routes = (AddingNew "" )::model.viewModel.routes } }, Cmd.Empty
   | Input txt ->

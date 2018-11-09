@@ -39,8 +39,8 @@ document.addEventListener_keydown(fun ev -> if onKeypress.IsSome && onKeypress.V
                                             obj())
 
 let renderThing (model:ThingTracking) dispatch =
+  let today = System.DateTimeOffset.Now.Date |> System.DateTimeOffset
   let recent = [
-    let today = System.DateTimeOffset.Now.Date |> System.DateTimeOffset
     for x in 0. .. 6. do
       let start1, end1 = today.AddDays(-x), today.AddDays(1. - x)
       let count = model.instances |> List.sumBy (fun dt -> if start1 <= dt && dt <= end1 then 1 else 0)
@@ -53,9 +53,6 @@ let renderThing (model:ThingTracking) dispatch =
       | DayOfWeek.Friday -> "Fri"
       | _Saturday -> "Sat"
       yield (sprintf "%s %s %d" (dayOfWeek start1.DayOfWeek) (start1.ToString("MM/dd")) count)
-    let before = today.AddDays(-6.)
-    yield (sprintf "Before %s %d" (before.ToString("MM/dd"))
-            (model.instances |> List.sumBy (fun dt -> if dt < before then 1 else 0)))
     ]
   R.div [] [
     yield R.div [] [
@@ -66,6 +63,12 @@ let renderThing (model:ThingTracking) dispatch =
     yield ul [] [
       for x in recent do
         yield li [] [str x]
+      ]
+    let startOfMonth = today.AddDays(1 - today.Day |> float)
+
+    yield ul[] [
+      li [] [str (sprintf "Since %s: %d" (startOfMonth.ToString("MM/dd")) (model.instances |> List.sumBy (fun dt -> if dt >= startOfMonth then 1 else 0)))]
+      li [] [str (sprintf "Lifetime: %d" (model.instances |> List.length))]
       ]
     yield R.br []
     ]

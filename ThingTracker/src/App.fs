@@ -60,7 +60,8 @@ let renderThing (model:ThingTracking) dispatch =
   R.div [] [
     yield R.div [] [
       R.text [Style [FontWeight "bold"]] [str model.name]
-      R.button [OnClick (fun _ -> dispatch <| AddInstance model.name)] [str "+"]
+      R.button [Style [MarginLeft "30px"]; OnClick (fun _ -> dispatch <| Undo model.name)] [str "-"]
+      R.button [Style [MarginLeft "30px"]; OnClick (fun _ -> dispatch <| AddInstance model.name)] [str "+"]
       ]
     yield ul [] [
       for x in recent do
@@ -84,7 +85,7 @@ let root (model:Model) dispatch =
   onKeypress <- Some handler
   let pageHtml = function
     | Busy ->
-      R.h1 [] [str "Loading..."]
+      R.h1 [] [str "Wait..."]
     | AddingNew name ->
       div
         [ ]

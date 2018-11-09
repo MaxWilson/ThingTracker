@@ -42,6 +42,7 @@ type Msg =
   | Input of string
   | GotoAdd
   | Saved of requestTime: DateTimeOffset
+  | Undo of string
 
 type ViewModel = {
   routes: UIState list

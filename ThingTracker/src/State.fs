@@ -140,6 +140,23 @@ let update msg model =
     let time = DateTimeOffset.Now
     let req = Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
     { model with things = things; viewModel = { model.viewModel with savingSince = Some time } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
+  | Undo name ->
+    // undo something from today
+    let update recognizer transform lst =
+      lst |> List.map(fun i -> if (recognizer i) then transform(i) else i)
+    let things = model.things |> update (fun t -> t.name = name) (fun t ->
+      let time = DateTimeOffset.Parse(DateTimeOffset.Now.Date.ToString())
+      let rec removeMostRecent = function
+        | h::rest when h >= time -> rest
+        | h::rest -> h::(removeMostRecent rest)
+        | [] -> []
+      { t with instances = removeMostRecent t.instances }
+      )
+    let thing = things |> List.find (fun t -> t.name = name)
+    let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
+    let time = DateTimeOffset.Now
+    let req = Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    { model with things = things; viewModel = { model.viewModel with savingSince = Some time } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
   | AddTracker name ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let thing = { name = name; instances = [] }

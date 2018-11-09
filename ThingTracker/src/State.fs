@@ -93,12 +93,21 @@ module Facebook =
   """)>]
   let initializeFacebook(_onAuth:AuthResponse -> unit) = jsNative
 
+let thingUrl name = sprintf "https://wilsondata.azurewebsites.net/api/%s/thingTracker" name
+let listUrl = thingUrl "List"
+let saveUrl name = sprintf "%s/%s" (thingUrl "Save") name
+
 let init result =
   {
     things = []
     viewModel = { routes = [Busy; Tracking] }
     auth = Auth.Uninitialized
     }, Cmd.ofSub (fun dispatch ->
+        let warmupAzureFunction() =
+          // try to ensure that Azure function is already awake by making a dummy call to auth and list endpoints.
+          // otherwise, it can take about five seconds for each to warm up
+          Fable.PowerPack.Fetch.fetch "https://wilsondata.azurewebsites.net/.auth/login/me" [] |> ignore
+          Fable.PowerPack.Fetch.fetch listUrl [] |> ignore
         Facebook.initializeFacebook(Facebook.onAuth dispatch)
         ())
 
@@ -108,7 +117,7 @@ let update msg model =
   match msg with
   | FetchList ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> "https://wilsondata.azurewebsites.net/api/List/thingTracker" [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
     let onSuccess (things: ThingTracking[]) =
       let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> List.map (fun d -> DateTimeOffset.Parse(d.ToString())) })
       FetchedList (List.ofArray things)
@@ -122,13 +131,13 @@ let update msg model =
     let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = DateTimeOffset.Now :: t.instances })
     let thing = things |> List.find (fun t -> t.name = name)
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    Fable.PowerPack.Fetch.postRecord<ThingTracking> ("https://wilsondata.azurewebsites.net/api/Save/thingTracker/" + name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
       |> ignore
     { model with things = things }, Cmd.Empty
   | AddTracker name ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let thing = { name = name; instances = [] }
-    Fable.PowerPack.Fetch.postRecord<ThingTracking> ("https://wilsondata.azurewebsites.net/api/Save/thingTracker/" + name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
       |> ignore
     { model with things = thing :: model.things; viewModel = { routes = [Tracking] } }, Cmd.Empty
   | GotoAdd ->

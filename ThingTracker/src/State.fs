@@ -93,9 +93,9 @@ module Facebook =
   """)>]
   let initializeFacebook(_onAuth:AuthResponse -> unit) = jsNative
 
-let thingUrl name = sprintf "https://wilsondata.azurewebsites.net/api/%s/thingTracker" name
-let listUrl = thingUrl "List"
-let saveUrl name = sprintf "%s/%s" (thingUrl "Save") name
+let thingUrl = sprintf "https://wilsondata.azurewebsites.net/api/thingTracker"
+let listUrl = thingUrl
+let saveUrl name = sprintf "%s/%s" thingUrl name
 
 let init result =
   {
@@ -181,6 +181,5 @@ let update msg model =
       { model with auth = Auth.Unauthenticated }, Cmd.Empty
     | Auth.Transition.Authorized token ->
       { model with auth = Auth.Authorized token }, Cmd.ofMsg FetchList
-    | event ->
-      failwithf "TODO, not implemented %A" event
-
+    | Auth.Transition.Logout ->
+      { model with auth = Auth.Unauthenticated }, Cmd.Empty

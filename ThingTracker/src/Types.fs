@@ -1,10 +1,29 @@
 module App.Types
 
 open System
+open Common
+
+module Instance =
+  type Data = DateTime * int
+  let combine (lst: Data list) =
+    lst |> List.groupBy fst |> List.map (fun (dt, data) -> (dt, data |> List.sumBy snd))
+  let normalize (lst: Data list) =
+    // compensate for weak typing: if Data was from an old version it will actually be DateTimeOffset instead of Data, need to convert
+    let convert (d: Data) =
+      match box d with
+      | :? DateTimeOffset as dt ->
+        dt.Date, 1
+      | _ -> d
+    lst |> List.map convert
+  let removeMostRecent (lst: Data list) =
+    let (dt, count) = lst |> List.maxBy fst
+    let rest = lst |> List.filter (fst >> flip (<) dt)
+    if count > 1 then (dt, count - 1) :: rest
+    else rest
 
 type ThingTracking = {
   name: string
-  instances: DateTimeOffset list
+  instances: Instance.Data list
   }
 
 module Auth =

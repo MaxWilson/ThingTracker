@@ -110,6 +110,21 @@ let init result =
         Facebook.initializeFacebook(Facebook.onAuth dispatch)
         ())
 
+module Fetch =
+  open Fable.Import
+
+  //let fetchAs<'T> (url: string) (decoder: Decode.Decoder<'T>) (init: RequestProperties list) : JS.Promise<'T> =
+  //    GlobalFetch.fetch(RequestInfo.Url url, requestProps init)
+  //    |> Promise.bind (fun response ->
+  //        if not response.Ok
+  //        then errorString response |> failwith
+  //        else
+  //            response.text()
+  //            |> Promise.map (fun res ->
+  //                match Decode.fromString decoder res with
+  //                | Ok successValue -> successValue
+  //                | Error error -> failwith error))
+
 let update msg model =
   //let saveThing (thing: ThingTracking) =
   //  Fable.powerPack.Fetch.postAs
@@ -118,7 +133,7 @@ let update msg model =
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
     let onSuccess (things: ThingTracking[]) =
-      let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> List.map (fun d -> DateTimeOffset.Parse(d.ToString())) })
+      let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> Instance.normalize |> Instance.combine })
       FetchedList (List.ofArray things)
     let onFail (e:Exception) = FetchedList []
     { model with viewModel = { model.viewModel with routes = Busy :: model.viewModel.routes } }, Cmd.ofPromise fetch () onSuccess onFail
@@ -133,7 +148,7 @@ let update msg model =
   | AddInstance name ->
     let update recognizer transform lst =
       lst |> List.map(fun i -> if (recognizer i) then transform(i) else i)
-    let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = DateTimeOffset.Now :: t.instances })
+    let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = (DateTime.Now.Date, 1) :: t.instances |> Instance.combine })
     let thing = things |> List.find (fun t -> t.name = name)
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let time = DateTimeOffset.Now
@@ -150,12 +165,7 @@ let update msg model =
       { model with viewModel = { model.viewModel with savingSince = Some time } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
     else
       let things = model.things |> update (fun t -> t.name = name) (fun t ->
-        let time = DateTimeOffset.Parse(DateTimeOffset.Now.Date.ToString())
-        let rec removeMostRecent = function
-          | h::rest when h >= time -> rest
-          | h::rest -> h::(removeMostRecent rest)
-          | [] -> []
-        { t with instances = removeMostRecent t.instances }
+        { t with instances = Instance.removeMostRecent t.instances }
         )
       let thing = things |> List.find (fun t -> t.name = name)
       let req = Fable.PowerPack.Fetch.postRecord<ThingTracking> (saveUrl name) thing [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]

@@ -13,6 +13,7 @@ open System.Net.Security
 open Fable.Core
 open JsInterop
 open Fable.PowerPack
+open Fable.Core
 
 //let pageParser: Parser<Page->Page,Page> =
 //  oneOf [
@@ -112,7 +113,14 @@ let init result =
 
 module Fetch =
   open Fable.Import
-
+  open Thoth.Json
+  //let thingDecoder =
+  //  Decode.map2 (fun name instances ->
+  //            { name = name; instances = instances } : ThingTracking)
+  //          (Decode.field "name" Decode.string)
+  //          (Decode.field "instances" (Decode.list (Decode.tuple2 Decode.datetime Decode.int)))
+  let decoder : Decode.Decoder<ThingTracking[]> =
+    Decode.array Unchecked.defaultof<_>
   //let fetchAs<'T> (url: string) (decoder: Decode.Decoder<'T>) (init: RequestProperties list) : JS.Promise<'T> =
   //    GlobalFetch.fetch(RequestInfo.Url url, requestProps init)
   //    |> Promise.bind (fun response ->
@@ -125,14 +133,17 @@ module Fetch =
   //                | Ok successValue -> successValue
   //                | Error error -> failwith error))
 
+
+
 let update msg model =
   //let saveThing (thing: ThingTracking) =
   //  Fable.powerPack.Fetch.postAs
   match msg with
   | FetchList ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl Thoth.Json.Decode.Decoder<ThingTracking[]> [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
-    let onSuccess (things: ThingTracking[]) =
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<_> listUrl (Thoth.Json.Decode.string) [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    let onSuccess (things: string) =
+      let things = [||]
       let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> Instance.normalize |> Instance.combine })
       FetchedList (List.ofArray things)
     let onFail (e:Exception) = FetchedList []

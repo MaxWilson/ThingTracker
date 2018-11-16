@@ -9,7 +9,6 @@ open Fable.Import
 open Fable.Import.Browser
 open Types
 open App.State
-open Global
 module Option = Microsoft.FSharp.Core.Option
 module R = Fable.Helpers.React
 type DayOfWeek = System.DayOfWeek
@@ -18,15 +17,6 @@ importAll "../sass/main.sass"
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
-
-let menuItem label page currentPage =
-    li
-      [ ]
-      [ a
-          [ classList [ "is-active", page = currentPage ]
-            Href (toHash page) ]
-          [ str label ] ]
-
 
 module KeyCode =
     let enter = 13.

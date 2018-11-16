@@ -4,7 +4,6 @@ open Elmish
 open Elmish.Browser.Navigation
 open Elmish.Browser.UrlParser
 open Fable.Import.Browser
-open Global
 open Types
 open System
 open Fable.PowerPack

@@ -131,7 +131,7 @@ let update msg model =
   match msg with
   | FetchList ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl Thoth.Json.Decode.Decoder<ThingTracking[]> [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
     let onSuccess (things: ThingTracking[]) =
       let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> Instance.normalize |> Instance.combine })
       FetchedList (List.ofArray things)

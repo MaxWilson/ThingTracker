@@ -110,15 +110,32 @@ let init result =
         Facebook.initializeFacebook(Facebook.onAuth dispatch)
         ())
 
+[<Emit("undefined")>]
+let undefined<'t> : 't = jsNative
+
 let update msg model =
   //let saveThing (thing: ThingTracking) =
   //  Fable.powerPack.Fetch.postAs
   match msg with
   | FetchList ->
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
-    let fetch() = Fable.PowerPack.Fetch.fetchAs<ThingTracking[]> listUrl [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
-    let onSuccess (things: ThingTracking[]) =
-      let things = things |> Array.map (fun thing -> { thing with instances = thing.instances |> List.map (fun d -> DateTimeOffset.Parse(d.ToString())) })
+    let fetch() = Fable.PowerPack.Fetch.fetchAs<obj> listUrl [Fetch.requestHeaders [HttpRequestHeaders.Custom ("X-ZUMO-AUTH", token)]]
+    let onSuccess (things) =
+      let things = things |> unbox<ThingTracking[]> |> Array.map (fun thing ->
+        let fixup (instances: (DateTime * int) list) =
+          match instances with
+          | h::t when (unbox<obj[]> h).Length = 2 -> // if it is a (dateTime,count) tuple already, skip fixup
+            instances
+          | _ ->
+            instances |> List.map (fun ((d,count) as row) ->
+              match DateTime.TryParse (row.ToString()) with
+              | true, d -> d, 1
+              | _ -> (DateTime.Parse(d.ToString())), count
+              )
+            |> List.groupBy fst
+            |> List.map (fun (d, rows) -> d.Date, rows |> List.sumBy (snd))
+        { thing with instances = thing.instances |> fixup }
+        )
       FetchedList (List.ofArray things)
     let onFail (e:Exception) = FetchedList []
     { model with viewModel = { model.viewModel with routes = Busy :: model.viewModel.routes } }, Cmd.ofPromise fetch () onSuccess onFail
@@ -133,7 +150,7 @@ let update msg model =
   | AddInstance name ->
     let update recognizer transform lst =
       lst |> List.map(fun i -> if (recognizer i) then transform(i) else i)
-    let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = DateTimeOffset.Now :: t.instances })
+    let things = model.things |> update (fun t -> t.name = name) (fun t -> { t with instances = (DateTimeOffset.Now.Date, 1) :: t.instances })
     let thing = things |> List.find (fun t -> t.name = name)
     let token = match model.auth with Auth.Authorized token -> token | _ -> failwith "Unexpected error: Unauthorized fetch"
     let time = DateTimeOffset.Now
@@ -150,9 +167,10 @@ let update msg model =
       { model with viewModel = { model.viewModel with savingSince = Some time } }, Cmd.ofPromise (fun () -> req) () (fun _ -> Saved time) (fun _ -> Saved time)
     else
       let things = model.things |> update (fun t -> t.name = name) (fun t ->
-        let time = DateTimeOffset.Parse(DateTimeOffset.Now.Date.ToString())
+        let time = DateTimeOffset.Now.Date
         let rec removeMostRecent = function
-          | h::rest when h >= time -> rest
+          | (h,count)::rest when h >= time && count > 1 -> (h, count-1)::rest
+          | (h,count)::rest when h >= time -> rest
           | h::rest -> h::(removeMostRecent rest)
           | [] -> []
         { t with instances = removeMostRecent t.instances }

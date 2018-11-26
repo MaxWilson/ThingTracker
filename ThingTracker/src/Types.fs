@@ -4,7 +4,7 @@ open System
 
 type ThingTracking = {
   name: string
-  instances: DateTimeOffset list
+  instances: (DateTime * int) list
   }
 
 module Auth =

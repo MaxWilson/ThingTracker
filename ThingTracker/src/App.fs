@@ -9,7 +9,6 @@ open Fable.Import
 open Fable.Import.Browser
 open Types
 open App.State
-open Global
 module Option = Microsoft.FSharp.Core.Option
 module R = Fable.Helpers.React
 type DayOfWeek = System.DayOfWeek
@@ -23,8 +22,7 @@ let menuItem label page currentPage =
     li
       [ ]
       [ a
-          [ classList [ "is-active", page = currentPage ]
-            Href (toHash page) ]
+          [ classList [ "is-active", page = currentPage ] ]
           [ str label ] ]
 
 

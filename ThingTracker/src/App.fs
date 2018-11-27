@@ -67,7 +67,7 @@ let renderThing (model:ThingTracking) dispatch =
 
     yield ul[] [
       li [] [str (sprintf "Since %s: %d" (startOfMonth.ToString("MM/dd")) (model.instances |> List.sumBy (fun (dt,count) -> if dt >= startOfMonth then count else 0)))]
-      li [] [str (sprintf "Lifetime: %d" (model.instances |> List.length))]
+      li [] [str (sprintf "Lifetime: %d" (model.instances |> List.sumBy snd))]
       ]
     yield R.br []
     ]
